@@ -4,8 +4,17 @@ import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import React from 'react'
 
+interface FormData {
+  name: string;
+  phone: string;
+  email: string;
+  area: string;
+  custom_area: string;
+  has_license: boolean | null;
+}
+
 export default function Home() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     phone: '',
     email: '',
@@ -13,9 +22,9 @@ export default function Home() {
     custom_area: '',
     has_license: null
   })
-  const [submitted, setSubmitted] = useState(false)
-  const [showLicenseQ, setShowLicenseQ] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [submitted, setSubmitted] = useState<boolean>(false)
+  const [showLicenseQ, setShowLicenseQ] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const serviceableAreas = ['HSR Layout', 'Koramangala', 'Electronic City']
 
@@ -35,7 +44,7 @@ export default function Home() {
     }
   }
 
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     if (!formData.name.trim()) {
       alert('Please enter your name')
       return false
@@ -59,7 +68,7 @@ export default function Home() {
     return true
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) return
 
     setIsLoading(true)
