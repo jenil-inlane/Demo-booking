@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
+import React from 'react'
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -18,7 +19,7 @@ export default function Home() {
 
   const serviceableAreas = ['HSR Layout', 'Koramangala', 'Electronic City']
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
