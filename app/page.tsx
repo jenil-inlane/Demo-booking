@@ -126,7 +126,7 @@ export default function Home() {
                   </div>
                 </div>
                 <h1 className="text-4xl font-bold text-green-800 mb-4 animate-fade-in">Thank You!</h1>
-                <p className="text-lg text-green-700 animate-fade-in-delayed">We'll get in touch with you shortly to start your driving journey.</p>
+                <p className="text-lg text-green-700 animate-fade-in-delayed">Thank you for trusting us to be your driving buddy, we will get in touch with you soon to start your driving journey.</p>
               </div>
             </div>
 
@@ -250,7 +250,7 @@ export default function Home() {
                           disabled={isLoading}
                         />
                         <p className="text-sm text-red-500 mt-2 px-1 animate-fade-in">
-                          ⚠️ We are currently not serving this location.
+                          ⚠️ We are currently not serving this location. Please fill out the form, and we&apos;ll get back to you with updates as soon as possible!!
                         </p>
                       </div>
                     )}
@@ -286,6 +286,15 @@ export default function Home() {
                             ✗ No
                           </button>
                         </div>
+                        
+                        {/* Message for No License */}
+                        {formData.has_license === false && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 animate-fade-in">
+                            <p className="text-sm text-blue-700">
+                              📝 No worries! Please complete the form and we will get in touch with you for your driving license assistance along with your driving lessons.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
