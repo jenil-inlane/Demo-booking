@@ -13,6 +13,14 @@ interface FormData {
   has_license: boolean | null;
 }
 
+interface ValidationErrors {
+  name: string;
+  phone: string;
+  email: string;
+  area: string;
+  custom_area: string;
+}
+
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -22,50 +30,154 @@ export default function Home() {
     custom_area: '',
     has_license: null
   })
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
+    name: '',
+    phone: '',
+    email: '',
+    area: '',
+    custom_area: ''
+  })
   const [submitted, setSubmitted] = useState<boolean>(false)
   const [showLicenseQ, setShowLicenseQ] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const serviceableAreas = ['HSR Layout', 'Koramangala', 'Electronic City']
 
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    return emailRegex.test(email)
+  }
+
+  // Phone number validation function
+  const validatePhone = (phone: string): boolean => {
+    // Remove all non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '')
+    // Check if it's exactly 10 digits
+    return cleanPhone.length === 10 && /^[6-9]\d{9}$/.test(cleanPhone)
+  }
+
+  // Real-time validation
+  const validateField = (name: string, value: string) => {
+    let error = ''
+    
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          error = 'Name is required'
+        } else if (value.trim().length < 2) {
+          error = 'Name must be at least 2 characters'
+        }
+        break
+      case 'phone':
+        if (!value.trim()) {
+          error = 'Phone number is required'
+        } else if (!validatePhone(value)) {
+          error = 'Please enter a valid 10-digit mobile number'
+        }
+        break
+      case 'email':
+        if (!value.trim()) {
+          error = 'Email is required'
+        } else if (!validateEmail(value)) {
+          error = 'Please enter a valid email address'
+        }
+        break
+      case 'area':
+        if (!value) {
+          error = 'Please select your area'
+        }
+        break
+      case 'custom_area':
+        if (formData.area === 'Other' && !value.trim()) {
+          error = 'Please enter your area'
+        }
+        break
+    }
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [name]: error
+    }))
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }))
 
-    if (e.target.name === 'area') {
-      if (serviceableAreas.includes(e.target.value)) {
+    // Real-time validation
+    validateField(name, value)
+
+    if (name === 'area') {
+      if (serviceableAreas.includes(value)) {
         setShowLicenseQ(true)
       } else {
         setShowLicenseQ(false)
         setFormData(prev => ({ ...prev, has_license: null }))
       }
+      
+      // Clear custom area validation when area changes
+      if (value !== 'Other') {
+        setValidationErrors(prev => ({ ...prev, custom_area: '' }))
+      }
     }
   }
 
   const validateForm = (): boolean => {
+    let isValid = true
+    const errors: ValidationErrors = {
+      name: '',
+      phone: '',
+      email: '',
+      area: '',
+      custom_area: ''
+    }
+
+    // Validate name
     if (!formData.name.trim()) {
-      alert('Please enter your name')
-      return false
+      errors.name = 'Name is required'
+      isValid = false
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters'
+      isValid = false
     }
+
+    // Validate phone
     if (!formData.phone.trim()) {
-      alert('Please enter your phone number')
-      return false
+      errors.phone = 'Phone number is required'
+      isValid = false
+    } else if (!validatePhone(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit mobile number'
+      isValid = false
     }
+
+    // Validate email
     if (!formData.email.trim()) {
-      alert('Please enter your email')
-      return false
+      errors.email = 'Email is required'
+      isValid = false
+    } else if (!validateEmail(formData.email)) {
+      errors.email = 'Please enter a valid email address'
+      isValid = false
     }
+
+    // Validate area
     if (!formData.area) {
-      alert('Please select your area')
-      return false
+      errors.area = 'Please select your area'
+      isValid = false
     }
+
+    // Validate custom area
     if (formData.area === 'Other' && !formData.custom_area.trim()) {
-      alert('Please enter your custom area')
-      return false
+      errors.custom_area = 'Please enter your area'
+      isValid = false
     }
-    return true
+
+    setValidationErrors(errors)
+    return isValid
   }
 
   const handleSubmit = async (): Promise<void> => {
@@ -76,8 +188,8 @@ export default function Home() {
     try {
       const cleanData = {
         name: formData.name.trim(),
-        phone: formData.phone.trim(),
-        email: formData.email.trim(),
+        phone: formData.phone.replace(/\D/g, ''), // Store only digits
+        email: formData.email.trim().toLowerCase(),
         area: formData.area,
         custom_area: formData.area === 'Other' ? formData.custom_area.trim() : null,
         has_license: formData.has_license
@@ -208,55 +320,109 @@ export default function Home() {
                   
                   {/* Form Fields */}
                   <div className="space-y-3 lg:space-y-4">
-                    <input 
-                      className="w-full p-3 lg:p-4 border-2 border-[#00c281]/50 rounded-xl focus:border-[#00ce84] focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800" 
-                      name="name" 
-                      placeholder="Full Name" 
-                      value={formData.name} 
-                      onChange={handleChange} 
-                      disabled={isLoading}
-                      style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
-                    />
+                    {/* Name Field */}
+                    <div>
+                      <input 
+                        className={`w-full p-3 lg:p-4 border-2 rounded-xl focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800 ${
+                          validationErrors.name 
+                            ? 'border-red-400 focus:border-red-500' 
+                            : 'border-[#00c281]/50 focus:border-[#00ce84]'
+                        }`}
+                        name="name" 
+                        placeholder="Full Name" 
+                        value={formData.name} 
+                        onChange={handleChange} 
+                        disabled={isLoading}
+                        style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
+                      />
+                      {validationErrors.name && (
+                        <p className="text-red-500 text-xs mt-1 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                          {validationErrors.name}
+                        </p>
+                      )}
+                    </div>
                     
-                    <input 
-                      className="w-full p-3 lg:p-4 border-2 border-[#00c281]/50 rounded-xl focus:border-[#00ce84] focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800" 
-                      name="phone" 
-                      placeholder="Phone Number" 
-                      value={formData.phone} 
-                      onChange={handleChange} 
-                      disabled={isLoading}
-                      style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
-                    />
+                    {/* Phone Field */}
+                    <div>
+                      <input 
+                        className={`w-full p-3 lg:p-4 border-2 rounded-xl focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800 ${
+                          validationErrors.phone 
+                            ? 'border-red-400 focus:border-red-500' 
+                            : 'border-[#00c281]/50 focus:border-[#00ce84]'
+                        }`}
+                        name="phone" 
+                        placeholder="Phone Number (10 digits)" 
+                        value={formData.phone} 
+                        onChange={handleChange} 
+                        disabled={isLoading}
+                        maxLength={10}
+                        style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                          {validationErrors.phone}
+                        </p>
+                      )}
+                    </div>
                     
-                    <input 
-                      className="w-full p-3 lg:p-4 border-2 border-[#00c281]/50 rounded-xl focus:border-[#00ce84] focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800" 
-                      name="email" 
-                      placeholder="Email Address" 
-                      value={formData.email} 
-                      onChange={handleChange} 
-                      disabled={isLoading}
-                      style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
-                    />
+                    {/* Email Field */}
+                    <div>
+                      <input 
+                        className={`w-full p-3 lg:p-4 border-2 rounded-xl focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800 ${
+                          validationErrors.email 
+                            ? 'border-red-400 focus:border-red-500' 
+                            : 'border-[#00c281]/50 focus:border-[#00ce84]'
+                        }`}
+                        name="email" 
+                        type="email"
+                        placeholder="Email Address" 
+                        value={formData.email} 
+                        onChange={handleChange} 
+                        disabled={isLoading}
+                        style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
+                      />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-xs mt-1 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                          {validationErrors.email}
+                        </p>
+                      )}
+                    </div>
 
-                    <select 
-                      className="w-full p-3 lg:p-4 border-2 border-[#00c281]/50 rounded-xl focus:border-[#00ce84] focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white text-gray-800" 
-                      name="area" 
-                      value={formData.area} 
-                      onChange={handleChange}
-                      disabled={isLoading}
-                      style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
-                    >
-                      <option value="" className="text-gray-500">Select Your Area</option>
-                      {serviceableAreas.map(area => (
-                        <option key={area} value={area}>{area}</option>
-                      ))}
-                      <option value="Other">Other</option>
-                    </select>
+                    {/* Area Field */}
+                    <div>
+                      <select 
+                        className={`w-full p-3 lg:p-4 border-2 rounded-xl focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white text-gray-800 ${
+                          validationErrors.area 
+                            ? 'border-red-400 focus:border-red-500' 
+                            : 'border-[#00c281]/50 focus:border-[#00ce84]'
+                        }`}
+                        name="area" 
+                        value={formData.area} 
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
+                      >
+                        <option value="" className="text-gray-500">Select Your Area</option>
+                        {serviceableAreas.map(area => (
+                          <option key={area} value={area}>{area}</option>
+                        ))}
+                        <option value="Other">Other</option>
+                      </select>
+                      {validationErrors.area && (
+                        <p className="text-red-500 text-xs mt-1 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                          {validationErrors.area}
+                        </p>
+                      )}
+                    </div>
 
                     {formData.area === 'Other' && (
                       <div className="animate-slide-down">
                         <input
-                          className="w-full p-3 lg:p-4 border-2 border-[#00c281]/50 rounded-xl focus:border-[#00ce84] focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800"
+                          className={`w-full p-3 lg:p-4 border-2 rounded-xl focus:outline-none transition-all duration-300 bg-white/70 backdrop-blur-sm hover:bg-white placeholder-gray-500 text-gray-800 ${
+                            validationErrors.custom_area 
+                              ? 'border-red-400 focus:border-red-500' 
+                              : 'border-[#00c281]/50 focus:border-[#00ce84]'
+                          }`}
                           name="custom_area"
                           placeholder="Enter your area"
                           value={formData.custom_area}
@@ -264,6 +430,11 @@ export default function Home() {
                           disabled={isLoading}
                           style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}
                         />
+                        {validationErrors.custom_area && (
+                          <p className="text-red-500 text-xs mt-1 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                            {validationErrors.custom_area}
+                          </p>
+                        )}
                         <p className="text-sm text-[#ff9f2c] mt-2 px-1 animate-fade-in" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
                           ⚠️ We are currently not serving this location. Please fill out the form, and we&apos;ll get back to you with updates as soon as possible!!
                         </p>
