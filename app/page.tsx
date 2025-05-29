@@ -43,9 +43,9 @@ export default function Home() {
 
   const serviceableAreas = ['HSR Layout', 'Koramangala', 'Electronic City']
 
-  // Email validation function
+  // Email validation function - allows apostrophes
   const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    const emailRegex = /^[a-zA-Z0-9._%+'"-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     return emailRegex.test(email)
   }
 
@@ -53,7 +53,7 @@ export default function Home() {
   const validatePhone = (phone: string): boolean => {
     // Remove all non-digit characters
     const cleanPhone = phone.replace(/\D/g, '')
-    // Check if it's exactly 10 digits
+    // Check if it's exactly 10 digits and starts with 6-9
     return cleanPhone.length === 10 && /^[6-9]\d{9}$/.test(cleanPhone)
   }
 
@@ -310,7 +310,7 @@ export default function Home() {
                 </h1>
                 
                 <p className="text-[#6257ff]/80 text-sm lg:text-base mt-2" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-                  Turning nervous starts into confident strides - India's first online driving school
+                  Turning nervous starts into confident strides - India&apos;s first online driving school
                 </p>
               </div>
 
