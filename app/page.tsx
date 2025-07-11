@@ -1,6 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation';
 import Image from 'next/image'
 import React from 'react'
 
@@ -22,6 +23,9 @@ interface ValidationErrors {
 }
 
 export default function Home() {
+
+  const router = useRouter();
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     phone: '',
@@ -179,8 +183,9 @@ export default function Home() {
     setValidationErrors(errors)
     return isValid
   }
+  
+  const handleSubmit = async (eligibleForPayment: boolean): Promise<void> => {
 
-  const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) return
 
     setIsLoading(true)
@@ -206,8 +211,26 @@ export default function Home() {
         console.error('Supabase error:', error)
         alert(`Failed to submit: ${error.message}`)
       } else {
-        console.log('Success:', data)
-        setSubmitted(true)
+        if (!eligibleForPayment) {
+          console.log('Success:', data)
+          setSubmitted(true)
+        } else {
+          console.log('Redirecting to payment gateway...');
+          if (router != null) {
+            const params = new URLSearchParams({
+            name: cleanData.name,
+            phone: cleanData.phone,
+            email: cleanData.email,
+            area: cleanData.area,
+            custom_area: cleanData.custom_area || '',
+            has_license: String(cleanData.has_license)
+          }).toString();
+          router.push(`/payment?${params}`);
+          } else {
+            console.log('Router is not available, redirecting to payment page failed.');
+            
+          }
+        }
       }
     } catch (err) {
       console.error('Network error:', err)
@@ -217,7 +240,7 @@ export default function Home() {
     }
   }
 
-  if (submitted) {
+  if (submitted) { 
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#ecffbd] via-white to-[#d9ff7a] flex items-center justify-center px-1">
         <div className="w-full max-w-sm lg:max-w-lg mx-auto lg:border lg:border-gray-200 lg:shadow-2xl lg:rounded-3xl lg:bg-white/90 lg:backdrop-blur-md lg:p-6">
@@ -489,7 +512,7 @@ export default function Home() {
                     {/* Submit Buttons */}
                     {showLicenseQ && formData.has_license === true && (
                       <button
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit(true)}
                         disabled={isLoading}
                         className="w-full px-3 lg:px-4 py-3 lg:py-4 mt-4 bg-gradient-to-r from-[#00c281] to-[#00ce84] text-white rounded-xl transition-all duration-300 transform hover:scale-105 hover:from-[#00ff91] hover:to-[#00c281] shadow-lg font-semibold animate-slide-up text-sm lg:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         style={{fontFamily: 'Glancyr Medium, sans-serif'}}
@@ -500,7 +523,7 @@ export default function Home() {
 
                     {(!showLicenseQ || formData.has_license === false) && (
                       <button
-                        onClick={handleSubmit}
+                        onClick={() => handleSubmit(false)}
                         disabled={isLoading}
                         className="w-full px-3 lg:px-4 py-3 lg:py-4 mt-4 bg-gradient-to-r from-[#00c281] to-[#00ce84] text-white rounded-xl transition-all duration-300 transform hover:scale-105 hover:from-[#00ff91] hover:to-[#00c281] shadow-lg font-semibold animate-slide-up text-sm lg:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         style={{fontFamily: 'Glancyr Medium, sans-serif'}}
