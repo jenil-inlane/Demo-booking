@@ -225,7 +225,7 @@ export default function Home() {
             custom_area: cleanData.custom_area || '',
             has_license: String(cleanData.has_license)
           }).toString();
-          router.push(`/payment?${params}`);
+          router.push(`/verification?${params}`);
           } else {
             console.log('Router is not available, redirecting to payment page failed.');
             
