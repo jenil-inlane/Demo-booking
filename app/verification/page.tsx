@@ -1,6 +1,6 @@
-"use client"
+"use client";
 import { use, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function VerificationPage() {
@@ -16,9 +16,9 @@ export default function VerificationPage() {
   const name = params.get("name") || "";
   const phone = params.get("phone") || "";
   const email = params.get("email") || "";
-  const area = params.get("area") || "";
   const custom_area = params.get("custom_area") || "";
   const has_license = params.get("has_license") || "";
+  const AMOUNT = 600;
 
   // Simulate sending OTP (replace with real API)
   const sendOtp = async () => {
@@ -50,23 +50,81 @@ export default function VerificationPage() {
     setError("");
     if (otpSent !== "" && phoneOtp === otpSent) {
       setPhoneVerified(true);
-      console
+      console;
     } else {
       setError("Invalid OTP. Please try again.");
     }
   };
 
+  async function redirectToPaymentGateway() {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "demo-page-payment",
+        {
+          body: {
+            name: name,
+            phone: phone,
+            email: email,
+            customerArea: custom_area,
+            hasDrivingLicense: has_license,
+            amount: AMOUNT,
+          },
+        }
+      );
+
+      if (error) {
+        setError("Failed to create payment link. Please try again.");
+        return;
+      }
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.gatewayURL;
+
+      // Add debug logging
+      console.log("Submitting to payment gateway:", {
+        gatewayURL: data.gatewayURL,
+        formData: data.formData,
+      });
+
+      // Ensure all form fields are properly set
+      Object.entries(data.formData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+        console.log(`Added form field: ${key}=${value}`);
+      });
+
+      // Set form attributes for proper submission
+      form.setAttribute("target", "_self");
+      form.style.display = "none";
+
+      // Append form to body, submit it, and then remove it
+      document.body.appendChild(form);
+
+      // Add a small delay before submitting the form
+      setTimeout(() => {
+        console.log("Submitting payment form...");
+        form.submit();
+        // Don't remove the form immediately to ensure it submits properly
+        setTimeout(() => {
+          if (document.body.contains(form)) {
+            document.body.removeChild(form);
+          }
+        }, 2000);
+      }, 100);
+    } catch (error) {
+      console.error("Error redirecting to payment gateway:", error);
+      setError(
+        "An error occurred while redirecting to the payment gateway. Please try again."
+      );
+    }
+  }
+
   const handleProceed = () => {
-    // Pass all params to payment page
-    const paymentParams = new URLSearchParams({
-      name,
-      phone,
-      email,
-      area,
-      custom_area,
-      has_license
-    }).toString();
-    router.push(`/payment?${paymentParams}`);
+    redirectToPaymentGateway();
   };
 
   return (
@@ -74,18 +132,30 @@ export default function VerificationPage() {
       <h2 className="text-2xl font-bold mb-4">Phone OTP Verification</h2>
       <div className="mb-6">
         <div>
-          <p><strong>Phone:</strong> {phone}</p>
+          <p>
+            <strong>Phone:</strong> {phone}
+          </p>
           {!phoneVerified ? (
             <>
-              <button onClick={sendOtp} className="bg-blue-500 text-white px-3 py-1 rounded mr-2">Send OTP on WhatsApp</button>
+              <button
+                onClick={sendOtp}
+                className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+              >
+                Send OTP on WhatsApp
+              </button>
               <input
                 type="text"
                 placeholder="Enter Phone OTP"
                 value={phoneOtp}
-                onChange={e => setPhoneOtp(e.target.value)}
+                onChange={(e) => setPhoneOtp(e.target.value)}
                 className="border px-2 py-1 rounded mr-2"
               />
-              <button onClick={verifyOtp} className="bg-green-500 text-white px-3 py-1 rounded">Verify</button>
+              <button
+                onClick={verifyOtp}
+                className="bg-green-500 text-white px-3 py-1 rounded"
+              >
+                Verify
+              </button>
             </>
           ) : (
             <span className="text-green-600 ml-2">Verified ✔️</span>
@@ -96,7 +166,11 @@ export default function VerificationPage() {
       <button
         disabled={!phoneVerified}
         onClick={handleProceed}
-        className={`w-full px-4 py-2 rounded ${phoneVerified ? "bg-[#00c281] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+        className={`w-full px-4 py-2 rounded ${
+          phoneVerified
+            ? "bg-[#00c281] text-white"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
       >
         Proceed to Payment
       </button>
