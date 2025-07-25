@@ -1,10 +1,9 @@
 "use client";
-import { use, useState } from "react";
-import { redirect, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function VerificationPage() {
-  const router = useRouter();
   const params = useSearchParams();
 
   const [phoneOtp, setPhoneOtp] = useState("");
@@ -16,9 +15,9 @@ export default function VerificationPage() {
   const name = params.get("name") || "";
   const phone = params.get("phone") || "";
   const email = params.get("email") || "";
-  const custom_area = params.get("custom_area") || "";
+  const area = params.get("area") || "";
   const has_license = params.get("has_license") || "";
-  const AMOUNT = 600;
+  const AMOUNT = 1;
 
   // Simulate sending OTP (replace with real API)
   const sendOtp = async () => {
@@ -50,7 +49,6 @@ export default function VerificationPage() {
     setError("");
     if (otpSent !== "" && phoneOtp === otpSent) {
       setPhoneVerified(true);
-      console;
     } else {
       setError("Invalid OTP. Please try again.");
     }
@@ -65,7 +63,7 @@ export default function VerificationPage() {
             name: name,
             phone: phone,
             email: email,
-            customerArea: custom_area,
+            area: area,
             hasDrivingLicense: has_license,
             amount: AMOUNT,
           },
