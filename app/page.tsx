@@ -6,20 +6,21 @@ import Image from 'next/image'
 import React from 'react'
 
 interface FormData {
-  name: string;
-  phone: string;
-  email: string;
-  area: string;
-  custom_area: string;
-  has_license: boolean | null;
+  email: string,
+  phone: string,
+  name: string,
+  amount: number,
+  area: string,
+  custom_area: string,
+  has_license: boolean | null
 }
 
 interface ValidationErrors {
-  name: string;
-  phone: string;
-  email: string;
-  area: string;
-  custom_area: string;
+  name: string,
+  phone: string,
+  email: string,
+  area: string,
+  custom_area: string
 }
 
 export default function Home() {
@@ -27,13 +28,15 @@ export default function Home() {
   const router = useRouter();
 
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    phone: '',
     email: '',
+    phone: '',
+    name: '',
+    amount: 0,
     area: '',
     custom_area: '',
     has_license: null
   })
+
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({
     name: '',
     phone: '',
@@ -55,9 +58,7 @@ export default function Home() {
 
   // Phone number validation function
   const validatePhone = (phone: string): boolean => {
-    // Remove all non-digit characters
     const cleanPhone = phone.replace(/\D/g, '')
-    // Check if it's exactly 10 digits and starts with 6-9
     return cleanPhone.length === 10 && /^[6-9]\d{9}$/.test(cleanPhone)
   }
 
@@ -196,28 +197,21 @@ export default function Home() {
         phone: formData.phone.replace(/\D/g, ''), // Store only digits
         email: formData.email.trim().toLowerCase(),
         area: formData.area,
-        custom_area: formData.area === 'Other' ? formData.custom_area.trim() : null,
+        custom_area: formData.area === 'Other' ? "" : formData.custom_area.trim(),
         has_license: formData.has_license
       }
 
-      console.log('Submitting data:', cleanData)
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('users')
         .insert([cleanData])
-        .select()
 
       if (error) {
-        console.error('Supabase error:', error)
         alert(`Failed to submit: ${error.message}`)
       } else {
         if (!eligibleForPayment) {
-          console.log('Success:', data)
           setSubmitted(true)
         } else {
-          console.log('Redirecting to payment gateway...');
-          if (router != null) {
-            const params = new URLSearchParams({
+          const params = new URLSearchParams({
             name: cleanData.name,
             phone: cleanData.phone,
             email: cleanData.email,
@@ -225,16 +219,16 @@ export default function Home() {
             custom_area: cleanData.custom_area || '',
             has_license: String(cleanData.has_license)
           }).toString();
-          router.push(`/payment?${params}`);
-          } else {
-            console.log('Router is not available, redirecting to payment page failed.');
-            
-          }
+          router.push(`/verification?${params}`);
         }
       }
     } catch (err) {
-      console.error('Network error:', err)
       alert('Network error. Please check your connection and try again.')
+      if (err instanceof Error) {
+        console.log(err.message);
+      } else {
+        console.log(err);
+      }
     } finally {
       setIsLoading(false)
     }
@@ -589,7 +583,7 @@ export default function Home() {
             }
             @keyframes slide-up {
               from { opacity: 0; transform: translateY(30px); }
-              to { opacity: 1; transform: translateY(0); }
+              to { opacity: 1, transform: translateY(0); }
             }
             @keyframes slide-down {
               from { opacity: 0; transform: translateY(-20px); }
